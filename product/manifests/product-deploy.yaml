@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product
+  labels:
+    app: product
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 3
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+        - name: product
+          image: alex04125/product
+          envFrom:
+            - configMapRef:
+                name: product-configmap
+            - secretRef:
+                name: product-secret
