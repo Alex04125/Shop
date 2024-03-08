@@ -1,0 +1,2 @@
+$env:Path += ";C:\Users\nechevah\AppData\Local\Programs\Python\Python312\Scripts" - to set up pip
+$env:Path = "C:\Users\nechevah\AppData\Local\Programs\Python\Python312;$env:Path" - to set up python
