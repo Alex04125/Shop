@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: purchase
+  labels:
+    app: purchase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: purchase
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 8
+  template:
+    metadata:
+      labels:
+        app: purchase
+    spec:
+      containers:
+        - name: purchase
+          image: alex04125/purchase
+          envFrom:
+            - configMapRef:
+                name: purchase-configmap
+            - secretRef:
+                name: purchase-secret

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: purchase-configmap
+data:
+  ORDER_QUEUE: "order"
+  PURSCHASE_QUEUE: "purchase"
+  MYSQL_HOST: host.docker.internal
+  MYSQL_USER: auth_user
+  MYSQL_DB: auth
+  MYSQL_PORT: "3306"
+  MYSQL_PASSWORD: "1234"

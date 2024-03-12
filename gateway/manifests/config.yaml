@@ -8,3 +8,6 @@ data:
   MYSQL_USER: auth_user
   MYSQL_DB: auth
   MYSQL_PORT: "3306"
+  PRODUCT_SVC_ADDRESS: "product:3000"
+  ORDER_SVC_ADDRESS: "order:4000"
+  ORDER_QUEUE: "order"

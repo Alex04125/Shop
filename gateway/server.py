@@ -4,8 +4,11 @@ import os
 from flask import Flask, request, jsonify
 from flask_mysqldb import MySQL
 from auth_service import access
+from product_service import product
+from order_service import order
 import requests
 import pika
+import json
 
 server = Flask(__name__)
 mysql = MySQL(server)
@@ -26,8 +29,8 @@ else:
     server.config["MYSQL_PORT"] = int(os.environ.get("MYSQL_PORT"))
 
 
-# connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
-# channel = connection.channel()
+connection = pika.BlockingConnection(pika.ConnectionParameters("rabbitmq"))
+channel = connection.channel()
 
 
 # AUTH SERVICE
@@ -53,74 +56,96 @@ def register():
 ##############################################################
 
 
-# # ORDER SERVICE
-# @server.route("/place_order", methods=["POST"])
-# def place_order():
-#     data = request.get_json()
-#     channel.basic_publish(
-#         exchange="",
-#         routing_key="video",
-#         body=data,
-#         properties=pika.BasicProperties(
-#             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
-#         ),
-#     )
-#     return "Order placed, expect confiramtion."
+# ORDER SERVICE
+@server.route("/place_order", methods=["POST"])
+def place_order():
+    data = request.get_json()
+    try:
+        # body_bytes = str(data).encode("utf-8")
+        channel.basic_publish(
+            exchange="",
+            routing_key=os.environ.get("ORDER_QUEUE"),
+            body=json.dumps(data),
+            properties=pika.BasicProperties(
+                delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
+            ),
+        )
+        return "Order placed, expect confirmation."
+    except Exception as err:
+        print(err)
+        return f"Internal server error{err}", 500
 
 
-# @server.route("/order_details/<int:order_id>", methods=["GET"])
-# def order_details(order_id):
-#     token = access.validate(request)
+@server.route("/order_details/<int:order_id>", methods=["GET"])
+def order_details(order_id):
+    token = access.validate(request)
 
-#     if not token:
-#         return "Not authorized"
+    if not token:
+        return "Not authorized"
 
-#     response = requests.post()
+    response, code = order.order_details(request, order_id)
 
-#     return response
+    if code == 200:
+        response = response.json()
+        return jsonify(response)
+    else:
+        return "Failed to find order"
 
 
 # #####################################################################
 
 
-# # PRODUCT SERVICE
-# @server.route("/products", methods=["GET"])
-# def get_all_products():
-#     token = access.validate(request)
+# PRODUCT SERVICE
+@server.route("/products", methods=["GET"])
+def get_products():
+    token = access.validate(request)
 
-#     if not token:
-#         return "Not authorized"
+    if not token:
+        return "Not authorized"
 
-#     response = requests.post()
+    products, code = product.get_all_products(request)
 
-#     return response
-
-
-# @server.route("/products/<int:product_id>", methods=["GET"])
-# def get_product(product_id):
-#     token = access.validate(request)
-
-#     if not token:
-#         return "Not authorized"
-
-#     response = requests.post()
-
-#     return response
+    if code == 200:
+        products = products.get_json()
+        return jsonify(products)
+    else:
+        return "Failed to get products"
 
 
-# @server.route("/products", methods=["POST"])
-# def create_product():
-#     token = access.validate(request)
+@server.route("/products/<int:product_id>", methods=["GET"])
+def get_product(product_id):
+    token = access.validate(request)
 
-#     if not token:
-#         return "Not authorized"
+    if not token:
+        return "Not authorized"
 
-#     response = requests.post()
+    products, code = product.get_product(request, product_id)
 
-#     return response
+    if code == 200:
+        products = products.get_json()
+        return jsonify(products)
+    else:
+        return "Failed to get product", code
 
 
-#############################################################
+@server.route("/products", methods=["POST"])
+def create_product():
+    token = access.validate(request)
+
+    if not token:
+        return "Not authorized"
+
+    response, code = product.create_product(request)
+
+    if code == 200:
+        return response
+    else:
+        response
+
+    return response
+
+
+############################################################
 
 if __name__ == "__main__":
     server.run(host="0.0.0.0", port=5000)
